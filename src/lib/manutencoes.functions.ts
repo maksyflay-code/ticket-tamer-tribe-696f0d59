@@ -36,6 +36,14 @@ function fmt(iso: string) {
   return new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
 }
 
+// Telegram parse_mode HTML rejeita "<" e ">" soltos (ex.: trecho "JNE<>VILA NOVA").
+function esc(v: unknown) {
+  return String(v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 export const notifyManutencaoAgendada = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
@@ -50,11 +58,11 @@ export const notifyManutencaoAgendada = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const txt =
       `📅 <b>Nova manutenção agendada</b>\n` +
-      `📡 <b>Operadora:</b> ${data.operadora}\n` +
-      `🛣️ <b>Trecho:</b> ${data.trecho}\n` +
+      `📡 <b>Operadora:</b> ${esc(data.operadora)}\n` +
+      `🛣️ <b>Trecho:</b> ${esc(data.trecho)}\n` +
       `🕐 <b>Início:</b> ${fmt(data.data_inicio)}\n` +
       (data.data_fim ? `🏁 <b>Fim:</b> ${fmt(data.data_fim)}\n` : "") +
-      (data.descricao ? `\n📝 ${data.descricao}` : "");
+      (data.descricao ? `\n📝 ${esc(data.descricao)}` : "");
     try {
       await sendTelegram(txt);
       return { ok: true };

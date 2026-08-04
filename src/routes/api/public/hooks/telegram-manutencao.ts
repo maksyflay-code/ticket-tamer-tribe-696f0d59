@@ -36,6 +36,15 @@ function fmt(d: string) {
   return new Date(d).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 }
 
+// Escapa caracteres que o parse_mode HTML do Telegram interpreta como tag
+// (ex.: trecho "JNE<>VILA NOVA" quebrava o envio com erro 400).
+function esc(v: unknown) {
+  return String(v ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 export const Route = createFileRoute('/api/public/hooks/telegram-manutencao')({
   server: {
     handlers: {
@@ -59,11 +68,11 @@ export const Route = createFileRoute('/api/public/hooks/telegram-manutencao')({
           if (!m.notificado_antes_at && now >= avisoQuando && now < inicio) {
             const txt =
               `⚠️ <b>Manutenção programada em ${m.antecedencia_min ?? 30} min</b>\n` +
-              `📡 <b>Operadora:</b> ${m.operadora}\n` +
-              `🛣️ <b>Trecho:</b> ${m.trecho}\n` +
+              `📡 <b>Operadora:</b> ${esc(m.operadora)}\n` +
+              `🛣️ <b>Trecho:</b> ${esc(m.trecho)}\n` +
               `🕐 <b>Início:</b> ${fmt(m.data_inicio as string)}\n` +
               (m.data_fim ? `🏁 <b>Fim:</b> ${fmt(m.data_fim as string)}\n` : '') +
-              (m.descricao ? `\n📝 ${m.descricao}` : '');
+              (m.descricao ? `\n📝 ${esc(m.descricao)}` : '');
             try {
               await sendTelegram(txt);
               await supabaseAdmin
@@ -80,11 +89,11 @@ export const Route = createFileRoute('/api/public/hooks/telegram-manutencao')({
           if (!m.notificado_inicio_at && now >= inicio) {
             const txt =
               `🔧 <b>Manutenção iniciada agora</b>\n` +
-              `📡 <b>Operadora:</b> ${m.operadora}\n` +
-              `🛣️ <b>Trecho:</b> ${m.trecho}\n` +
+              `📡 <b>Operadora:</b> ${esc(m.operadora)}\n` +
+              `🛣️ <b>Trecho:</b> ${esc(m.trecho)}\n` +
               `🕐 <b>Início:</b> ${fmt(m.data_inicio as string)}\n` +
               (m.data_fim ? `🏁 <b>Previsão fim:</b> ${fmt(m.data_fim as string)}\n` : '') +
-              (m.descricao ? `\n📝 ${m.descricao}` : '');
+              (m.descricao ? `\n📝 ${esc(m.descricao)}` : '');
             try {
               await sendTelegram(txt);
               await supabaseAdmin
